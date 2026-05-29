@@ -10,11 +10,13 @@ DEFAULT_TTS_MODEL = "edge"
 TTS_VOICES = {
     "edge": "en-US-JennyNeural",
     "kokoro": "af_heart",
+    "espeak": "en",
 }
 
 # Language codes for TTS models that require them
 TTS_LANGUAGE_CODES = {
     "kokoro": "a",  # a=English, e=Spanish, j=Japanese, etc.
+    "espeak": "en",  # espeak language/voice code
 }
 
 # TTS model-specific seconds of overlap between sentences (overrides default OVERLAP_SECONDS if specified)
