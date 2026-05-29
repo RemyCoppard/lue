@@ -9,7 +9,7 @@
 [![Terminal](https://img.shields.io/badge/interface-terminal-86c9fa.svg)](https://github.com/superstarryeyes/lue)
 [![Discord](https://img.shields.io/badge/Discord-Join%20our%20Community-5865F2?logo=discord&logoColor=white)](https://discord.gg/z8sE2gnMNk)
 
-[Features](#-features) • [Quick Start](#-quick-start-macos-and-linux) • [Installation](#-installation-macos-linux-and-windows) • [Usage](#-usage) • [Customize](#️-customize) • [Development](#-development)
+[Features](#-features) • [Quick Start](#-quick-start-macos-and-linux) • [Installation](#-installation-macos-linux-and-windows) • [Usage](#-usage) • [Customize](#️-customize) • [Develop](DEVELOPER.md)
 
 <img src="https://github.com/superstarryeyes/lue/blob/main/images/lue-screenshot.gif" alt="Lue Screenshot" width="100%" />
 
@@ -22,7 +22,7 @@
 | **Feature**                             | **Description**                                                                                |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | **📖 Multi-Format Support**             | Support for EPUB, PDF, TXT, DOCX, DOC, HTML, RTF, and Markdown with seamless format detection  |
-| **👄 Modular TTS System**               | Edge TTS (default) and Kokoro TTS (local/offline) with extensible architecture for new models  |
+| **👄 Modular TTS System**               | Edge TTS (default), eSpeak (offline), and Kokoro TTS (local/offline) with extensible architecture for new models  |
 | **🌍 Cross-Platform & Multilingual**    | Full support for macOS, Linux, Windows (via WSL) with 100+ languages and consistent global experience    |
 | **🎛️ Speed Adjustment**                 | Adjust text-to-speech playback speed from 1x to 3x for personalized listening experience       |
 | **🎯 Auto-Scroll & Precise Word Highlighting**        | Automatic scrolling and word-level highlighting synchronized with actual speech, improving focus and concentration     |
@@ -65,7 +65,7 @@ lue path/to/your/book.epub
 - **FFmpeg** - Audio processing (required)
 
 #### Optional Dependencies  
-- **espeak** - Kokoro TTS support
+- **espeak** - For eSpeak TTS (offline) or Kokoro TTS support
 
 #### macOS (Homebrew)
 ```bash
@@ -121,9 +121,29 @@ pip install -r requirements.txt
 pip install .
 ```
 
+#### Enable eSpeak TTS (Optional - No Extra Dependencies!)
+
+eSpeak is a lightweight offline TTS engine. Just install the system package:
+
+```bash
+# macOS
+brew install espeak
+
+# Ubuntu/Debian
+sudo apt install espeak
+
+# Fedora
+sudo dnf install espeak
+```
+
+Then use it with:
+```bash
+lue --tts espeak path/to/your/book.epub
+```
+
 #### Enable Kokoro TTS (Optional)
 
-For local/offline TTS capabilities:
+For local/offline TTS capabilities with higher quality:
 
 ```bash
 # 1. Edit requirements.txt - uncomment Kokoro packages:
@@ -163,8 +183,8 @@ lue --guide
 # View available command line options
 lue --help
 
-# Use specific TTS model (edge/kokoro/none) 
-lue --tts kokoro path/to/your/book.epub
+# Use specific TTS model (edge/espeak/kokoro/none) 
+lue --tts espeak path/to/your/book.epub
 
 # Use a specific voice (full list at VOICES.md)
 lue --voice "en-US-AriaNeural" path/to/your/book.epub
@@ -173,7 +193,7 @@ lue --voice "en-US-AriaNeural" path/to/your/book.epub
 lue --speed 1.5 path/to/your/book.epub
 
 # Specify a language code if needed
-lue --lang a path/to/your/book.epub
+lue --lang en path/to/your/book.epub
 
 # Seconds of overlap between sentences
 lue --over 0.2 path/to/your/book.epub
@@ -228,7 +248,7 @@ Lue offers three UI complexity modes that you can cycle through using the `v` ke
 - **Mode 1 (Medium)** - Displays a top title bar with progress information and borders
 - **Mode 2 (Full)** - Full UI with both top title bar and bottom control information
 
-Additionally, Lue provides customizable word-level and sentence-level highlighting that can be adjusted to suit your reading preferences. You can cycle through different highlighting modes using the `w` and `s` keys. These highlighting settings can also be configured as defaults in the [config.py](lue/config.py) file.
+Additionally, Lue provides customizable word-level and sentence-level highlighting that can be adjusted to suit your reading preferences. You can cycle through different highlighting modes using the `s` and `w` keys.
 
 ### Keyboard Layouts
 
