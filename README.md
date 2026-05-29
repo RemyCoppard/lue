@@ -111,7 +111,7 @@ sudo apt install espeak
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/superstarryeyes/lue.git
+git clone https://github.com/RemyCoppard/lue.git
 cd lue
 
 # 2. Install dependencies
