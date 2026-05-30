@@ -13,6 +13,8 @@
 
 <img src="https://github.com/superstarryeyes/lue/blob/main/images/lue-screenshot.gif" alt="Lue Screenshot" width="100%" />
 
+**Disclaimer: I've used AL generate my commits!**
+
 </div>
 
 ---
