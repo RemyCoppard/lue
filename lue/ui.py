@@ -76,6 +76,7 @@ class UIColors:
     TEXT_HIGHLIGHT = "bold magenta" # Current sentence highlight
     WORD_HIGHLIGHT = "bold yellow"  # Current word highlight
     WORD_HIGHLIGHT_STANDOUT = "black on bright_yellow"  # Standout mode word highlight
+    SPEED_READING_TEXT = "bold white"  # Centered speed reading word
     SELECTION_HIGHLIGHT = "reverse" # Text selection highlight
     
     # Progress bar colors
@@ -102,6 +103,7 @@ class UIColors:
         cls.TEXT_HIGHLIGHT = "grey70"
         cls.WORD_HIGHLIGHT = "white"
         cls.WORD_HIGHLIGHT_STANDOUT = "black on white"
+        cls.SPEED_READING_TEXT = "bold white"
         cls.SELECTION_HIGHLIGHT = "on grey50"
     
     @classmethod
@@ -124,6 +126,7 @@ class UIColors:
         cls.TEXT_HIGHLIGHT = "grey30"
         cls.WORD_HIGHLIGHT = "black"
         cls.WORD_HIGHLIGHT_STANDOUT = "white on black"
+        cls.SPEED_READING_TEXT = "bold black"
         cls.SELECTION_HIGHLIGHT = "on grey50"
     
 # Create global instances for easy access
@@ -138,7 +141,7 @@ def get_terminal_size():
     """Get terminal size."""
     try:
         columns, rows = os.get_terminal_size()
-        return max(columns, 40), max(rows, 10)
+        return columns, rows
     except OSError:
         return 80, 24
 
@@ -151,9 +154,9 @@ def update_document_layout(reader):
     
     width, _ = get_terminal_size()
     
-    # Adjust available width based on UI complexity mode
-    if config.UI_COMPLEXITY_MODE == 0:
-        # Mode 0: Full screen width for text
+    # Adjust available width based on UI mode
+    if config.UI_MODE == 0 or config.UI_MODE == 3:
+        # Mode 0 or 3: Full screen width for text
         available_width = width
     else:
         # Mode 1 and 2: Account for borders and padding
@@ -224,6 +227,51 @@ def update_document_layout(reader):
             )
 
 
+def get_current_word(reader):
+    """Return the current spoken word for speed reading mode."""
+    words = getattr(reader, 'current_sentence_words', None)
+    word_idx = getattr(reader, 'ui_word_idx', 0)
+    if words and 0 <= word_idx < len(words):
+        return words[word_idx]
+
+    try:
+        paragraph = reader.chapters[reader.ui_chapter_idx][reader.ui_paragraph_idx]
+        sentence = content_parser.split_into_sentences(paragraph)[reader.ui_sentence_idx]
+    except (AttributeError, IndexError):
+        return ""
+
+    fallback_words = [token for token in sentence.split() if re.search(r'[a-zA-Z0-9]', token)]
+    return fallback_words[0] if fallback_words else ""
+
+
+def render_speed_reading_output(reader, width, height, console):
+    """Render speed reading word centered in the current terminal size."""
+    word = get_current_word(reader)
+    center_y = max(0, ((height + 1) // 2) - 1)
+    escaped_word = word.replace("\033", "")
+    word_width = Text(escaped_word).cell_len
+    if word_width > width:
+        escaped_word = escaped_word[:width]
+        word_width = Text(escaped_word).cell_len
+    center_x = max(0, (width - word_width) // 2)
+
+    padded_content = Text()
+    for line_idx in range(height):
+        if line_idx == center_y:
+            padded_content.append(" " * center_x)
+            padded_content.append(escaped_word, style=COLORS.SPEED_READING_TEXT)
+            padded_content.append(" " * max(0, width - center_x - word_width))
+        else:
+            padded_content.append(" " * width)
+
+        if line_idx < height - 1:
+            padded_content.append("\n")
+
+    with console.capture() as capture:
+        console.print(padded_content, end='', overflow='crop')
+    return f"\033[H{capture.get()}"
+
+
 def _apply_current_text_color(line):
     """Apply the current theme's text color to a line."""
     if not line.plain:
@@ -238,12 +286,12 @@ def get_visible_content(reader):
     """Get the visible content to display."""
     width, height = get_terminal_size()
     
-    # Adjust available space based on UI complexity mode
-    if config.UI_COMPLEXITY_MODE == 0:
-        # Mode 0: Full screen for text, no borders or UI elements
+    # Adjust available space based on UI mode
+    if config.UI_MODE == 0 or config.UI_MODE == 3:
+        # Mode 0 or 3: Full screen for text, no borders or UI elements
         available_height = height
         available_width = width
-    elif config.UI_COMPLEXITY_MODE == 1:
+    elif config.UI_MODE == 1:
         # Mode 1: Account for top title bar and borders, but no bottom controls
         available_height = max(1, height - 4)  # Top border, title, bottom border
         available_width = max(20, width - 10)  # Side borders and padding
@@ -484,8 +532,8 @@ def get_compact_subtitle(reader, width):
         auto_sep = base_sep + (ICONS.LINE_SEPARATOR_SHORT * auto_extra)
         
         # Get UI mode display
-        ui_mode_names = ["MIN", "MED", "FULL"]
-        ui_mode_display = ui_mode_names[config.UI_COMPLEXITY_MODE]
+        ui_mode_names = ["MIN", "MED", "FULL", "SR"]
+        ui_mode_display = ui_mode_names[config.UI_MODE]
         
         # Modified controls_text to remove ui_mode_text visual display but keep functionality
         controls_text = f"{nav_text_1} [{COLORS.CONTROL_ICONS}]{ICONS.HIGHLIGHT_UP}[/{COLORS.CONTROL_ICONS}] {nav_text_2} [{COLORS.CONTROL_ICONS}]{ICONS.HIGHLIGHT_DOWN}[/{COLORS.CONTROL_ICONS}] [{COLORS.SEPARATORS}]{base_sep}[/{COLORS.SEPARATORS}] {page_text} [{COLORS.ARROW_ICONS}]{ICONS.ROW_NAVIGATION}[/{COLORS.ARROW_ICONS}] {scroll_text} [{COLORS.ARROW_ICONS}]{ICONS.PAGE_NAVIGATION}[/{COLORS.ARROW_ICONS}] [{COLORS.SEPARATORS}]{base_sep}[/{COLORS.SEPARATORS}] {quit_text} [{COLORS.QUIT_ICON}]{ICONS.QUIT}[/{COLORS.QUIT_ICON}]"
@@ -514,8 +562,8 @@ def get_compact_subtitle(reader, width):
         icon_auto = f"{auto_scroll_icon}"
         
         # Get UI mode display
-        ui_mode_names = ["MIN", "MED", "FULL"]
-        ui_mode_display = ui_mode_names[config.UI_COMPLEXITY_MODE]
+        ui_mode_names = ["MIN", "MED", "FULL", "SR"]
+        ui_mode_display = ui_mode_names[config.UI_MODE]
         
         # Modified controls_text to remove ui_mode_text visual display but keep functionality
         controls_text = f"[{COLORS.SEPARATORS}]{separator}[/{COLORS.SEPARATORS}] {nav_text_1} [{COLORS.CONTROL_ICONS}]{ICONS.HIGHLIGHT_UP}[/{COLORS.CONTROL_ICONS}] {nav_text_2} [{COLORS.CONTROL_ICONS}]{ICONS.HIGHLIGHT_DOWN}[/{COLORS.CONTROL_ICONS}] [{COLORS.SEPARATORS}]{separator}[/{COLORS.SEPARATORS}] {page_text} [{COLORS.ARROW_ICONS}]{ICONS.ROW_NAVIGATION}[/{COLORS.ARROW_ICONS}] {scroll_text} [{COLORS.ARROW_ICONS}]{ICONS.PAGE_NAVIGATION}[/{COLORS.ARROW_ICONS}] [{COLORS.SEPARATORS}]{separator}[/{COLORS.SEPARATORS}] {quit_text} [{COLORS.QUIT_ICON}]{ICONS.QUIT}[/{COLORS.QUIT_ICON}]"
@@ -537,8 +585,8 @@ def get_compact_subtitle(reader, width):
         icon_auto = f"{auto_scroll_icon}"
         
         # Get UI mode display
-        ui_mode_names = ["MIN", "MED", "FULL"]
-        ui_mode_display = ui_mode_names[config.UI_COMPLEXITY_MODE]
+        ui_mode_names = ["MIN", "MED", "FULL", "SR"]
+        ui_mode_display = ui_mode_names[config.UI_MODE]
         
         # Modified controls_text to remove ui_mode_text visual display but keep functionality
         controls_text = f"[{COLORS.SEPARATORS}]{separator}[/{COLORS.SEPARATORS}] {nav_text_1} [{COLORS.CONTROL_ICONS}]{ICONS.HIGHLIGHT_UP}[/{COLORS.CONTROL_ICONS}] {nav_text_2} [{COLORS.CONTROL_ICONS}]{ICONS.HIGHLIGHT_DOWN}[/{COLORS.CONTROL_ICONS}] [{COLORS.SEPARATORS}]{separator}[/{COLORS.SEPARATORS}] {page_text} [{COLORS.ARROW_ICONS}]{ICONS.ROW_NAVIGATION}[/{COLORS.ARROW_ICONS}] {scroll_text} [{COLORS.ARROW_ICONS}]{ICONS.PAGE_NAVIGATION}[/{COLORS.ARROW_ICONS}] [{COLORS.SEPARATORS}]{separator}[/{COLORS.SEPARATORS}] {quit_text} [{COLORS.QUIT_ICON}]{ICONS.QUIT}[/{COLORS.QUIT_ICON}]"
@@ -560,8 +608,8 @@ def get_compact_subtitle(reader, width):
         icon_auto = f"{auto_scroll_icon}"
         
         # Get UI mode display
-        ui_mode_names = ["MIN", "MED", "FULL"]
-        ui_mode_display = ui_mode_names[config.UI_COMPLEXITY_MODE]
+        ui_mode_names = ["MIN", "MED", "FULL", "SR"]
+        ui_mode_display = ui_mode_names[config.UI_MODE]
         
         # Modified controls_text to remove ui_mode_text visual display but keep functionality
         controls_text = f"[{COLORS.SEPARATORS}]{separator}[/{COLORS.SEPARATORS}] {nav_text_1} [{COLORS.CONTROL_ICONS}]{ICONS.HIGHLIGHT_UP}[/{COLORS.CONTROL_ICONS}] {nav_text_2} [{COLORS.CONTROL_ICONS}]{ICONS.HIGHLIGHT_DOWN}[/{COLORS.CONTROL_ICONS}] [{COLORS.SEPARATORS}]{separator}[/{COLORS.SEPARATORS}] {page_text} [{COLORS.ARROW_ICONS}]{ICONS.ROW_NAVIGATION}[/{COLORS.ARROW_ICONS}] {scroll_text} [{COLORS.ARROW_ICONS}]{ICONS.PAGE_NAVIGATION}[/{COLORS.ARROW_ICONS}] [{COLORS.SEPARATORS}]{separator}[/{COLORS.SEPARATORS}] {quit_text} [{COLORS.QUIT_ICON}]{ICONS.QUIT}[/{COLORS.QUIT_ICON}]"
@@ -637,7 +685,7 @@ async def display_ui(reader):
                 width, height, reader.auto_scroll_enabled, reader.selection_active,
                 reader.selection_start, reader.selection_end,
                 # Add playback speed to trigger UI updates when speed changes
-                reader.playback_speed, config.UI_COMPLEXITY_MODE,
+                reader.playback_speed, getattr(reader, 'speed_reading_enabled', False), config.UI_MODE,
                 # Add recent menu state to trigger updates
                 reader.show_recent_menu, reader.recent_menu_selection_idx
             )
@@ -648,6 +696,12 @@ async def display_ui(reader):
             reader.last_rendered_state = current_state
             reader.last_terminal_size = (width, height)
             
+            if getattr(reader, 'speed_reading_enabled', False):
+                temp_console = Console(width=width, height=height, force_terminal=True)
+                sys.stdout.write('\033[?25l' + render_speed_reading_output(reader, width, height, temp_console))
+                sys.stdout.flush()
+                return
+
             visible_lines = get_visible_content(reader)
             
             # Start building the full output buffer
@@ -659,8 +713,8 @@ async def display_ui(reader):
             
             book_output = ""
             
-            if config.UI_COMPLEXITY_MODE == 0:
-                # Mode 0: Minimal - text only, no borders
+            if config.UI_MODE == 0 or config.UI_MODE == 3:
+                # Mode 0 or 3: Minimal - text only, no borders
                 # Manually pad lines to overwrite screen content (prevents ghosting without clearing screen)
                 padded_content = Text()
                 
@@ -682,7 +736,7 @@ async def display_ui(reader):
                 
                 book_output = capture.get()
                 
-            elif config.UI_COMPLEXITY_MODE == 1:
+            elif config.UI_MODE == 1:
                 # Build book_content for Mode 1 and 2
                 book_content = Text("")
                 for i, line in enumerate(visible_lines):

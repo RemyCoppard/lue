@@ -49,7 +49,7 @@ PDF_FOOTNOTE_MARGIN = 0.1  # Bottom 10% of page considered footnote area
 
 # UI settings
 SMOOTH_SCROLLING_ENABLED = True  # Enable smooth scrolling for keyboard navigation
-UI_COMPLEXITY_MODE = 2  # 0=minimal (text only), 1=medium (top bar only), 2=full (default)
+UI_MODE = 2  # 0=minimal (text only), 1=medium (top bar only), 2=full (default), 3=speed reading
 
 # Highlighting settings
 SENTENCE_HIGHLIGHTING_ENABLED = True  # Enable sentence-level highlighting

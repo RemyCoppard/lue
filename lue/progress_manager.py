@@ -54,6 +54,7 @@ def load_extended_progress(progress_file):
         "scroll_offset": 0,
         "tts_enabled": True,
         "auto_scroll_enabled": True,
+        "speed_reading_enabled": False,
         "manual_scroll_anchor": None,
         "playback_speed": 1.0
     }
@@ -71,6 +72,7 @@ def load_extended_progress(progress_file):
                 "scroll_offset": data.get("scroll_offset", 0),
                 "tts_enabled": data.get("tts_enabled", True),
                 "auto_scroll_enabled": data.get("auto_scroll_enabled", True),
+                "speed_reading_enabled": data.get("speed_reading_enabled", False),
                 "manual_scroll_anchor": data.get("manual_scroll_anchor", None),
                 "playback_speed": data.get("playback_speed", 1.0)
             }
@@ -92,7 +94,7 @@ def save_progress(progress_file, chapter_idx, paragraph_idx, sentence_idx):
         json.dump(progress, f, indent=2)
 
 def save_extended_progress(progress_file, chapter_idx, paragraph_idx, sentence_idx, 
-                          scroll_offset, tts_enabled, auto_scroll_enabled, manual_scroll_anchor=None, original_file_path=None, playback_speed=1.0, percentage=0.0):
+                          scroll_offset, tts_enabled, auto_scroll_enabled, manual_scroll_anchor=None, original_file_path=None, playback_speed=1.0, percentage=0.0, speed_reading_enabled=False):
     """
     Save extended reading progress including UI state.
     
@@ -108,6 +110,7 @@ def save_extended_progress(progress_file, chapter_idx, paragraph_idx, sentence_i
         original_file_path: Original path to the eBook file (optional)
         playback_speed: Audio playback speed
         percentage: Completion percentage (0.0 to 100.0)
+        speed_reading_enabled: Whether speed reading mode is enabled
     """
     progress = {
         "c": chapter_idx,
@@ -116,6 +119,7 @@ def save_extended_progress(progress_file, chapter_idx, paragraph_idx, sentence_i
         "scroll_offset": float(scroll_offset),
         "tts_enabled": bool(tts_enabled),
         "auto_scroll_enabled": bool(auto_scroll_enabled),
+        "speed_reading_enabled": bool(speed_reading_enabled),
         "playback_speed": float(playback_speed),
         "completion_percentage": float(percentage)
     }

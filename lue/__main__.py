@@ -320,10 +320,14 @@ async def main():
             console.print(f"[bold yellow]Warning: TTS model '{args.tts}' "
                          "failed to initialize and has been disabled.[/bold yellow]")
 
+        # Switch to alternate screen buffer just before running the UI
+        sys.stdout.write('\033[?1049h')
+        sys.stdout.flush()
+
         await reader.run()
 
     finally:
-        sys.stdout.write('\033[?1000l\033[?1006l\033[?25h')
+        sys.stdout.write('\033[?1049l\033[?1000l\033[?1006l\033[?25h')
         sys.stdout.flush()
         if fd is not None and old_settings is not None:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)

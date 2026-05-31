@@ -129,6 +129,9 @@ class Lue:
         
         self.scroll_offset = progress_data["scroll_offset"]
         self.auto_scroll_enabled = progress_data["auto_scroll_enabled"]
+        self.speed_reading_enabled = progress_data.get("speed_reading_enabled", False)
+        if self.speed_reading_enabled:
+            config.UI_MODE = 3
         self.is_paused = not progress_data["tts_enabled"]
         self.playback_speed = progress_data["playback_speed"]
         if not self.tts_model:
@@ -173,6 +176,7 @@ class Lue:
         self.last_rendered_state = None
         self.last_terminal_size = None
         self.render_lock = asyncio.Lock()
+        self._layout_needs_update = False
         self.resize_scheduled = False
         self.first_sentence_jump = False
         self._initial_load_complete = True
@@ -745,7 +749,8 @@ class Lue:
             manual_scroll_anchor=manual_scroll_anchor,
             original_file_path=self.file_path,
             playback_speed=self.playback_speed,
-            percentage=self._calculate_ui_progress_percentage()
+            percentage=self._calculate_ui_progress_percentage(),
+            speed_reading_enabled=self.speed_reading_enabled
         )
 
     def _scroll_to_position_immediate(self, chapter_idx, paragraph_idx, sentence_idx):
@@ -1124,8 +1129,8 @@ class Lue:
         await audio.stop_and_clear_audio(self)
         self._save_extended_progress()
         logging.info("--- Application Shutting Down ---")
-        # Disable mouse reporting and restore terminal
-        sys.stdout.write('\033[?1002l\033[2J\033[H\033[?25h')
+        # Disable mouse reporting and restore terminal (switch back to main buffer)
+        sys.stdout.write('\033[?1049l\033[?1002l\033[?25h')
         sys.stdout.flush()
 
         if config.SHOW_ERRORS_ON_EXIT:
@@ -1290,6 +1295,10 @@ class Lue:
 
             elif cmd == '_resize':
                 self.resize_scheduled = False
+                if self.speed_reading_enabled:
+                    self._layout_needs_update = True
+                    asyncio.create_task(ui.display_ui(self))
+                    continue
                 if self.smooth_scroll_task and not self.smooth_scroll_task.done():
                     self.smooth_scroll_task.cancel()
                 
@@ -1361,6 +1370,18 @@ class Lue:
                         self.smooth_scroll_task.cancel()
                     self._scroll_to_position_immediate(self.chapter_idx, self.paragraph_idx, self.sentence_idx)
                 self._save_extended_progress()
+            elif cmd == 'cycle_ui_complexity':
+                # Cycle through UI modes: 0=minimal, 1=medium, 2=full, 3=speed reading
+                config.UI_MODE = (config.UI_MODE + 1) % 4
+                self.speed_reading_enabled = (config.UI_MODE == 3)
+                if not self.speed_reading_enabled:
+                    if self._layout_needs_update:
+                        self._layout_needs_update = False
+                    ui.update_document_layout(self)
+                else:
+                    self._layout_needs_update = True
+                self._save_extended_progress()
+                asyncio.create_task(ui.display_ui(self))
             elif cmd == 'move_to_top_visible':
                 if config.SMOOTH_SCROLLING_ENABLED:
                     self._handle_move_to_top_smooth()
@@ -1400,13 +1421,6 @@ class Lue:
             elif cmd == 'toggle_word_highlight':
                 # Cycle through word highlighting modes: 0=off, 1=normal, 2=standout
                 config.WORD_HIGHLIGHT_MODE = (config.WORD_HIGHLIGHT_MODE + 1) % 3
-                # Force immediate UI update
-                asyncio.create_task(ui.display_ui(self))
-            elif cmd == 'cycle_ui_complexity':
-                # Cycle through UI complexity modes: 0=minimal, 1=medium, 2=full
-                config.UI_COMPLEXITY_MODE = (config.UI_COMPLEXITY_MODE + 1) % 3
-                # Update document layout to account for new available space
-                ui.update_document_layout(self)
                 # Force immediate UI update
                 asyncio.create_task(ui.display_ui(self))
             elif 'next' in cmd or 'prev' in cmd:
