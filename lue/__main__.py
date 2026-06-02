@@ -174,6 +174,13 @@ async def main():
         help="Keyboard configuration. Use a preset name (vim, default) or a path to a JSON file. Default: default",
         default="default"
     )
+
+    parser.add_argument(
+        "-m", "--mode",
+        type=int,
+        choices=[0, 1, 2, 3],
+        help="Visual layout mode: 0=minimal, 1=medium, 2=full, 3=speed reading",
+    )
     
     if available_tts:
         # Add "none" option to available TTS choices
@@ -233,6 +240,10 @@ async def main():
 
     if args.over is not None:
         config.OVERLAP_SECONDS = args.over
+
+    if args.mode is not None:
+        config.UI_MODE = args.mode
+        config.UI_MODE_OVERRIDE = True
 
     # Handle PDF filter settings
     if args.filter is not None:

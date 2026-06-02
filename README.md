@@ -210,6 +210,12 @@ lue --filter 0.12 0.20 path/to/your/book.pdf     # Header 12%, footnote 20%
 # Use the Vim keyboard layout
 lue --keys vim path/to/your/book.epub
 
+# Start in a specific visual layout mode: 0=minimal, 1=medium, 2=full, 3=speed reading
+lue --mode 0 path/to/your/book.epub
+lue -m 1 path/to/your/book.epub
+lue -m 2 path/to/your/book.epub
+lue -m 3 path/to/your/book.epub
+
 ```
 
 ### Keyboard Controls (Default)
@@ -244,11 +250,12 @@ lue --keys vim path/to/your/book.epub
 
 ### UI Modes
 
-Lue offers three UI complexity modes that you can cycle through using the `v` key or set as your default in the [config.py](lue/config.py) file:
+Lue offers four UI complexity modes that you can cycle through using the `v` key, set as your default in the [config.py](lue/config.py) file, or choose at launch with `-m` / `--mode`:
 
 - **Mode 0 (Minimal)** - Clean text-only display with no borders or UI elements
 - **Mode 1 (Medium)** - Displays a top title bar with progress information and borders
 - **Mode 2 (Full)** - Full UI with both top title bar and bottom control information
+- **Mode 3 (Speed Reading)** - Single-word speed-reading display
 
 Additionally, Lue provides customizable word-level and sentence-level highlighting that can be adjusted to suit your reading preferences. You can cycle through different highlighting modes using the `s` and `w` keys.
 

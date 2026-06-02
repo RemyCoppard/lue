@@ -129,7 +129,10 @@ class Lue:
         
         self.scroll_offset = progress_data["scroll_offset"]
         self.auto_scroll_enabled = progress_data["auto_scroll_enabled"]
-        self.speed_reading_enabled = progress_data.get("speed_reading_enabled", False)
+        if getattr(config, "UI_MODE_OVERRIDE", False):
+            self.speed_reading_enabled = (config.UI_MODE == 3)
+        else:
+            self.speed_reading_enabled = progress_data.get("speed_reading_enabled", False)
         if self.speed_reading_enabled:
             config.UI_MODE = 3
         self.is_paused = not progress_data["tts_enabled"]
@@ -176,7 +179,7 @@ class Lue:
         self.last_rendered_state = None
         self.last_terminal_size = None
         self.render_lock = asyncio.Lock()
-        self._layout_needs_update = False
+        self._layout_needs_update = self.speed_reading_enabled
         self.resize_scheduled = False
         self.first_sentence_jump = False
         self._initial_load_complete = True
